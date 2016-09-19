@@ -1,0 +1,40 @@
+[Database]
+//ServerName=1
+ServerName=6717541661345
+Database=hjdqdpxgh
+//Database=hjdqdpxgh
+LogId=dv
+LogPassword=vm|pjbxghbkzo
+//LogPassword=
+UserId=
+DatabasePassword=
+DbParm=*33356*#@#wlplOw{hWEG
+Lock=1
+htmlhelpfile = asdfdsaf
+DBMS=MSS Microsoft SQL Server 6.x
+LogPassword=
+
+[EduManage]
+
+title   = 中国美术学院研究生教务管理系统
+userid  =1
+//edition =zgmy-08-09-09-23
+edition =zgmy-x2-10-17-18
+
+[downpath]
+
+FTPSERVER1 = 61.130.6.234
+FTPSERVER2 = 10.10.40.5
+FTPSERVER3 =
+FTPLOGINUSER1 = eduftp
+FTPLOGINUSER2 = eduftp
+FTPLOGINUSER3 = eduftp
+FTPLOGINPASS1 = eduftplwh
+FTPLOGINPASS2 = eduftplwh
+FTPLOGINPASS3 = eduftplwh
+FTPLOGINPORT1 = 21
+FTPLOGINPORT2 = 21
+FTPLOGINPORT3 = 21
+FTPDIR1 = /up
+FTPDIR2 = 
+FTPDIR3 = 

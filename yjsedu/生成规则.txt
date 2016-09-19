@@ -1,0 +1,196 @@
+public String constructStudentID(String OperID, String EntranceDate,
+                                    String ProfessionID, String StudentIDRange,
+                                    String ClassID,String CollegeID,
+                                    Connection conn) throws EduException
+   {
+       String StudentID = "";
+       String sql = "";
+       RowSet cacheSet = null;
+       RowSet dictSet = null;
+       String bLevel = ""; //本科
+       String zLevel = ""; //专科
+
+       //获取学号需要参数
+       String StrAry[] = new String[8];
+
+       PAStudentIDRuleDAO ruleDAO = daoFactory.getPAStudentIDRuleDAO();
+       PAStudentIDRule objRule[] = new PAStudentIDRule[8];
+
+       //学校代码
+       objRule[0] = new PAStudentIDRule();
+       objRule[0].RuleFld = "SchoolID";
+       objRule[0] = ruleDAO.findPAStudentIDRule(objRule[0], conn);
+       if (objRule[0].RuleFlag.equalsIgnoreCase("1")) {
+           StrAry[0] = objRule[0].RuleValue;
+       }
+
+       //学生类别代码
+       objRule[1] = new PAStudentIDRule();
+       objRule[1].RuleFld = "TypeID";
+       objRule[1] = ruleDAO.findPAStudentIDRule(objRule[1], conn);
+       if (objRule[1].RuleFlag.equalsIgnoreCase("1")) {
+           StrAry[1] = objRule[1].RuleValue;
+       }
+
+       //年份
+       objRule[2] = new PAStudentIDRule();
+       objRule[2].RuleFld = "Year";
+       objRule[2] = ruleDAO.findPAStudentIDRule(objRule[2], conn);
+       if (objRule[2].RuleFlag.equalsIgnoreCase("1")) {
+           if (objRule[2].RuleLength >= 4)
+               StrAry[2] = EntranceDate.substring(1, 4);
+           else
+               StrAry[2] = EntranceDate.substring(4 - objRule[2].RuleLength, 4);
+       }
+
+       //专业代码
+       objRule[3] = new PAStudentIDRule();
+       objRule[3].RuleFld = "ProfessionID";
+       objRule[3] = ruleDAO.findPAStudentIDRule(objRule[3], conn);
+       if (objRule[3].RuleFlag.equalsIgnoreCase("1")) {
+           if (objRule[3].RuleLength >= ProfessionID.length())
+               StrAry[3] = ProfessionID;
+           else
+               StrAry[3] = ProfessionID.substring(ProfessionID.length() - objRule[3].RuleLength, ProfessionID.length());
+       }
+
+       //学院代码
+       objRule[4] = new PAStudentIDRule();
+       objRule[4].RuleFld = "CollegeID";
+       objRule[4] = ruleDAO.findPAStudentIDRule(objRule[4], conn);
+       if (objRule[4].RuleFlag.equalsIgnoreCase("1")) {
+           if (objRule[4].RuleLength >= CollegeID.length())
+               StrAry[4] = CollegeID;
+           else
+               StrAry[4] = CollegeID.substring(CollegeID.length() - objRule[4].RuleLength, CollegeID.length());
+       }
+
+       //获取专业的层次形式代码
+       PAProfession objProf = new PAProfession();
+       PAProfessionDAO profDAO = daoFactory.getPAProfessionDAO();
+       objProf.ProfessionID = ProfessionID;
+       objProf = profDAO.findPAProfession(objProf, conn);
+
+       //层次代码
+       objRule[5] = new PAStudentIDRule();
+       objRule[5].RuleFld = "LevelID";
+       objRule[5] = ruleDAO.findPAStudentIDRule(objRule[5], conn);
+       if (objRule[5].RuleFlag.equalsIgnoreCase("1")) {
+           //判断层次代码采用什么形式的代码
+           PAControlParamDAO ctrlDAO = daoFactory.getPAControlParamDAO();
+           PAControlParam objCtrl = new PAControlParam();
+           objCtrl.CtrlTypeID = ControlParam.CNST_CTRL_LEVELID;
+           objCtrl.KeyString = "LevelID";
+           objCtrl = ctrlDAO.findPAControlParam(objCtrl,conn);
+           if ("1".equalsIgnoreCase(objCtrl.DefaultValue))
+           {
+               //获取层次名称
+               PADictionaryDAO dictDAO = daoFactory.getPADictionaryDAO();
+               PADictionary objDict = new PADictionary();
+               objDict.DictTypeID = SysDict.CNST_DICT_LEVELS;
+               objDict.DictID = String.valueOf(objProf.LevelID);
+               objDict = dictDAO.findPADictionary(objDict,conn);
+               //获取本科层次代码
+               JDBCFieldArray whereColsLevel = new JDBCFieldArray();
+               whereColsLevel.add("DictTypeID",SysDict.CNST_DICT_STUDENTIDLEVELID);
+               whereColsLevel.add("DictName","本科");
+               dictSet = dictDAO.selectPADictionarysRS(whereColsLevel,conn);
+               try{
+                   if (dictSet.next()){
+                       bLevel = dictSet.getString("DictID");
+                   }
+               }
+               catch (SQLException e) {
+                   log.error("[sqlcode]:" + e.getErrorCode() + " [errmsg]:" + e.getMessage());
+                   throw new EduException(ErrorCode.ERR_TRAVERSEROWSETFAIL);
+               }
+
+               //获取专科层次代码
+               JDBCFieldArray whereColsLevel1 = new JDBCFieldArray();
+               whereColsLevel1.add("DictTypeID",SysDict.CNST_DICT_STUDENTIDLEVELID);
+               whereColsLevel1.add("DictName","专科");
+               dictSet = dictDAO.selectPADictionarysRS(whereColsLevel1,conn);
+               try{
+                   if (dictSet.next()){
+                       zLevel = dictSet.getString("DictID");
+                   }
+               }
+               catch (SQLException e) {
+                   log.error("[sqlcode]:" + e.getErrorCode() + " [errmsg]:" + e.getMessage());
+                   throw new EduException(ErrorCode.ERR_TRAVERSEROWSETFAIL);
+               }
+
+               if (objDict.DictName.indexOf("本")>=0) {
+                   StrAry[5] = bLevel; //本科
+               }
+               else {
+                   StrAry[5] = zLevel; //专科
+               }
+           }
+           else{
+               StrAry[5] = Integer.toString(objProf.LevelID);
+           }
+       }
+
+       //FormalID 形式代码
+       objRule[6] = new PAStudentIDRule();
+       objRule[6].RuleFld = "FormalID";
+       objRule[6] = ruleDAO.findPAStudentIDRule(objRule[6], conn);
+       if (objRule[6].RuleFlag.equalsIgnoreCase("1")) {
+           StrAry[6] = Integer.toString(objProf.FormalID);
+       }
+
+       //ClassID 班级代码
+       objRule[7] = new PAStudentIDRule();
+       objRule[7].RuleFld = "ClassID";
+       objRule[7] = ruleDAO.findPAStudentIDRule(objRule[7], conn);
+       if (objRule[7].RuleFlag.equalsIgnoreCase("1")) {
+           if (objRule[7].RuleLength >= ClassID.length())
+               StrAry[7] = ClassID;
+           else
+               StrAry[7] = ClassID.substring(ClassID.length() - objRule[7].RuleLength, ClassID.length());
+       }
+       else {
+           if (StringUtils.isEmpty(StudentIDRange)) {
+               throw new EduException(ErrorCode.ERR_PARMERR);
+           }
+       }
+
+       try {
+           sql = "Select RuleFld,RuleName,RuleFlag,RuleLength,RuleOrder,RuleValue ";
+           sql += "From PAStudentIDRule Where RuleFlag=1 Order By RuleOrder ";
+           cacheSet = DbUtils.executeQuery(sql, ErrorCode.ERR_QRYPASTUDENTIDRULEFAIL, conn);
+           RTCommonDAO rtDao = daoFactory.getRTCommonDAO();
+           while (cacheSet.next())
+           {
+               //构造学号共同部分
+               StudentID += rtDao.getRuleValue(objRule,cacheSet.getString("RuleFld"),StrAry);
+           }
+       }
+       catch (SQLException e) {
+           log.error("[sqlcode]:" + e.getErrorCode() + " [errmsg]:" + e.getMessage());
+           throw new EduException(ErrorCode.ERR_TRAVERSEROWSETFAIL);
+       }
+
+       return StudentID;
+   }
+   /**
+    * 获取规则值
+    * @param RuleFld[] String
+    * @param curFld String
+    * @param RuleValue[] String
+    * @return String
+    */
+   public String getRuleValue(PAStudentIDRule obj[],String curFld, String RuleValue[]) throws EduException
+   {
+       String StudentID = "";
+       for(int i=0;i<8;i++)
+       {
+           if (obj[i].RuleFld.compareToIgnoreCase(curFld)==0)
+           {
+               StudentID = RuleValue[i];
+               break;
+           }
+       }
+       return StudentID;
+   }
